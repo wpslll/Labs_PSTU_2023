@@ -26,6 +26,8 @@ int main()
 ```
 # 3) Блок-схема
 ![lab_7 drawio](https://github.com/wpslll/Labs_PSTU_2023/assets/151571121/2248d31c-5788-4107-9cf3-94127fc73bbd)
+![lab_7_s drawio](https://github.com/wpslll/Labs_PSTU_2023/assets/151571121/37076dd2-703c-4fcb-9c12-b0f2d3273c09)
+![lab_7_s drawio (1)](https://github.com/wpslll/Labs_PSTU_2023/assets/151571121/ffc3ec26-6ca6-47d8-b1cf-95990c63f365)
 # 4) Тесты
 s(n, 0.36);
 n = 2;
