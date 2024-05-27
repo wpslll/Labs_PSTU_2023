@@ -1,299 +1,160 @@
 #include <iostream>
-#include <ctime>
-#define _USE_MATH_DEFINES 
-#include <sstream>
-#include <math.h>
+#include <string>
+
 using namespace std;
 
-const int M = 5;
-const double A = M_PI_4;
-int collisionCounter = 0;
+string name[30] = { "Oleg", "Alexander", "Vladimir", "Elena", "Eva", "Adam", "Adam", "Vergillius", "Nikita", "Vladislav", "Andrew", "Thomas", "Kyle", "Mario", "Luigi", "Odin", "Thor", "Hercules", "Hades", "Triton", "Gefest", "Charon", "Angela", "Matthew", "Jorge", "Sinclair", "Medusa", "Theresa", "Irina", "Maria" };
+string patronymic[30] = { "Olegov", "Olegovna", "Vladimirov", "Vladimirovna", "Adamov", "Adamovna", "Andreevich", "Andreevna", "Thomasov", "Thomasovna","Evgeniev", "Evgenievna", "Nikitych", "Alexandrovna", "Alexandrov", "Mikhailov", "Mikhailovna", "Makarov", "Makarovna", "Kirillov", "Kirillovna", "Konstantinov", "Konstantinovna", "Germanov", "Germanovna", "Innokentiev", "Innokentieva", "Bogdanov", "Bogdanovna", "Vasilyev" };
+string surname[30] = { "Karpov", "Karpovna", "Vlasov","Vlasovna","Tihonov","Tihonovna","Gavriilov","Gavriilovna","Rodionov","Rodionovna","Kotov","Kotova","Bykov","Bykovna","Tretyakov","Tretyakovna","Smirnov","Smirnova","Suvorov","Suvorovna","Voronov","Voronovna","Arhipov","Arhipovna","Martynov","Martynova","Gorshkov","Gorshkova","Ovchinnikov","Ovcinnikovna" };
+string passport[30] = { "571721","532521","232371","829321","323612","992999","921310","010395","865201","889211","111628","561217","915986","303490","901785","725524","714542","201175","802147","500011","328271","312131","278328","373278","282114","982348","238178","412211","327284","557211" };
+string dates[30] = { "12.12.2011","18.05.1030","09.01.2000","21.03.2003","19.10.2010","23.09.2009","24.10.2010","25.11.2011","26.12.2012","27.01.1988","28.02.1967","29.04.1999","30.05.1867","31.12.1999","01.06.1976","02.07.1980","03.08.1982","04.09.1955","05.10.1948","06.11.2014","16.05.1977","29.06.2004","19.02.2001","09.11.1996","27.03.2002","30.10.2000","27.08.2022","28.02.2019","29.10.1932","30.09.2014" };
+int collisions = 0;
 
-struct Node
-{
-    string key = "";
-    string value = "";
-    Node* next = nullptr;
-    Node* prev = nullptr;
+struct Person {
+	Person() { name = "NULL"; passport = "NULL"; birthday = "NULL"; }
+	string name, passport, birthday;
 };
 
-struct HashTable
-{
-    Node* table[M];
+struct hashTable {
+	Person* arr;
 
-    HashTable()
-    {
-        for (int i = 0; i < M; ++i)
-            table[i] = nullptr;
-    }
+	hashTable(int size) { arr = new Person[size]; }
+	~hashTable() { delete[] arr; }
+
+	void search(string bday, const int size);
+	void add(Person tmp, const int size);
 };
 
-double mod1(double k) 
-{
-    int intPart = static_cast<int>(k);
-    return k - intPart;
+void showTable(hashTable* table, const int size);
+void show(const Person tmp);
+
+Person personCreator();
+
+int get_string(string str);
+
+void printPerson(const Person* const arr, const int size);
+int hashFunc(string str, const int size);
+void createArray(Person* arr, const int collisions);
+
+
+void hashTable::search(string bday, const int size) {
+	int hash = hashFunc(bday, size);
+	int index = hash;
+
+	while (arr[index].birthday != bday && index < size) { index++; }
+	if (index >= size) {
+		index = 0;
+		while (arr[index].birthday != bday && index < hash) { index++; }
+		if (index >= hash) { cout << "Person with date of birth " << bday << " not found." << endl; }
+		else { cout << "Person with date of birth " << bday << " found. Index " << index << endl; }
+	}
+	else { cout << "Person with date of birth " << bday << " found. Index " << index << endl; }
 }
 
-int gethash(double k) 
-{
-    return static_cast<int>(M * mod1(k) * A);
+
+void hashTable::add(Person tmp, const int size) {
+	int index = hashFunc(tmp.birthday, size);
+	int hash = index;
+	if (arr[index].name == "NULL") {
+		arr[index] = tmp; return;
+	}
+	else {
+		while (index < size) {
+			if (arr[index].name == "NULL") { arr[index] = tmp; return; }
+			index++;
+			collisions++;
+		}
+
+		if (index >= size) {
+			index = 0;
+			collisions++;
+			while (index < hash) {
+				if (arr[index].name == "NULL") {
+					arr[index] = tmp;
+					return;
+				}
+				index++;
+				collisions++;
+			}
+		}
+	}
 }
 
-int gethash(string line) 
-{
-    int n = 0;
-    for (int i = 0; i < line.size(); i++) 
-    {
-        n += static_cast<int>(pow(line[i], 2) * M_2_SQRTPI + abs(line[i]) * M_SQRT1_2);
-    }
-    return gethash(abs(n));
+Person personCreator() {
+	Person tmp;
+
+	tmp.name = surname[rand() % 30] + " " + name[rand() % 30] + " " + patronymic[rand() % 30];
+	tmp.birthday = dates[rand() % 30];
+	tmp.passport = passport[rand() % 30];
+
+	return tmp;
 }
 
-bool add(HashTable& table, string key, string elem) 
-{
-    Node* newNode = new Node;
-    newNode->key = key;
-    newNode->value = elem;
-    newNode->next = nullptr;
-    newNode->prev = nullptr;
-    int hash = gethash(key);
-    if (table.table[hash] == nullptr)
-    {
-        table.table[hash] = newNode;
-        return true;
-    }
-    else 
-    {
-        Node* current = table.table[hash];
-        while (current->next != nullptr)
-        {
-            current = current->next;
-        }
-        current->next = newNode;
-        newNode->prev = current;
-        collisionCounter++;
-    }
-    return true;
+void show(const Person tmp) {
+	cout << "Name: " << tmp.name << endl;
+	cout << "Date of birth: " << tmp.birthday << endl;
+	cout << "Passport: " << tmp.passport << endl;
+	cout << "\n";
 }
 
-bool removeByKey(HashTable& table, string key)
-{
-    int hash = gethash(key);
-    Node* current = table.table[hash];
-    while (current != nullptr) 
-    {
-        if (current->key == key)
-        {
-            if (current->prev != nullptr)
-            {
-                current->prev->next = current->next;
-            }
-            else 
-            {
-                table.table[hash] = current->next;
-            }
-            if (current->next != nullptr) 
-            {
-                current->next->prev = current->prev;
-            }
-            delete current;
-            return true;
-        }
-        current = current->next;
-    }
-    return false;
+void printPerson(const Person* const arr, const int size) {
+	for (int i = 0; i < size; i++) { show(arr[i]); }
 }
 
-bool removeByValue(HashTable& table, string elem) 
-{
-    for (int i = 0; i < M; i++)
-    {
-        Node* current = table.table[i];
-        while (current != nullptr) 
-        {
-            if (current->value == elem) 
-            {
-                if (current->prev != nullptr) 
-                {
-                    current->prev->next = current->next;
-                }
-                else 
-                {
-                    table.table[i] = current->next;
-                }
-                if (current->next != nullptr) 
-                {
-                    current->next->prev = current->prev;
-                }
-                delete current;
-                return true;
-            }
-            current = current->next;
-        }
-    }
-    return false;
+void createArray(Person* arr, const int collisions) {
+	for (int i = 0; i < collisions; i++) { arr[i] = personCreator(); }
 }
 
-Node* get(HashTable& table, string key)
-{
-    int hash = gethash(key);
-    Node* current = table.table[hash];
-    while (current != nullptr) 
-    {
-        if (current->key == key) 
-        {
-            return current;
-        }
-        current = current->next;
-    }
-    return nullptr;
+int get_string(string str) {
+	string yam = dates[11];
+	int sum = stoi(yam);
+	return sum;
 }
 
-void print(HashTable& table) 
-{
-    for (int i = 0; i < M; i++) 
-    {
-        Node* current = table.table[i];
-        while (current != nullptr)
-        {
-            cout << "[" << current->key << " : " << current->value << "]\n";
-            current = current->next;
-        }
-    }
+int hashFunc(string str, const int size) {
+	double a = 0.618 * get_string(str);
+	double c = size * (a - static_cast<int>(a));
+	return static_cast<int>(c);
 }
 
-string surnames[] = 
-{
-    "Ivanov", "Kozlov", "Novikov", "Morozov", "Petrov",
-    " Lebedev", "Soloviev", "Vasiliev", "Zaitsev", "Pavlov",
-    "Volkov", "Golubev", "Ignatov", "Bogdanov", "Borobyev",
-    "Fyodorov", "Mikhaylov", "Beleyev", "Tarasov", "Belov",
-    "Zhukov", "Orlov", "Kiselev", "Makarov", "Andreyev"
-};
-
-string names[] = 
-{
-    "Alexander", "Sergey", "Andrey", "Dmitriy", "Aleksey",
-    "Mikhail", "Nikolay", "Evgeniy", "Oleg", "Vladimir",
-    "Nikita", "Yuriy", "Ivan", "Konstantin", "Stanislav",
-    "Valentin", "Valeriy", "Oleg", "Konstantin", "Stanislav",
-    "Roman", "Igor", "Gennadiy", "Vyacheslav", "David",
-    "Nikita", "Artem", "Timur", "Ruslan", "Semyon"
-};
-
-string patronymics[] = 
-{
-    "Ivanovich", "Sergeevich", "Andreyevich", "Dmitriyevich", "Alekseyevich",
-    "Ivanovich", "Nikolayevich", "Mikhaylovich", "Olegovich", "Petrovich",
-    "Anatolyevich", "Vladimirovich", "Yegorovich", "Viktorovich", "Fyodorovich",
-    "Konstantinovich", "Arkadyevich", "Ermolaevich", "Vasilievich", "Timofeevich",
-    "Igorevich", "Valeryevich", "Stanislavovich", "Romanovich", "Gennadiyevich",
-    "Pavlovich", "Vyacheslavovich", "Evgenyevich", "Davidovich", "Grigoryevich"
-};
-
-string generateFullName() 
-{
-    return surnames[rand() % 30] + " " + names[rand() % 30] + " " + patronymics[rand() % 30];
+void showTable(hashTable* table, const int size) {
+	for (int i = 0; i < size; i++) { show(table->arr[i]); }
 }
 
-string correctStr(int n, int length) 
-{
-    string strn = to_string(n);
-    while (strn.size() < length) 
-    {
-        strn = '0' + strn;
-    }
-    while (strn.size() > length) 
-    {
-        strn.erase(0, 1);
-    }
-    return strn;
+int main() {
+	srand(time(0));
+	int sizeArr;
+	cout << "Input array size: "; cin >> sizeArr;
+
+	Person* arr = new Person[sizeArr];
+	hashTable table(sizeArr);
+	createArray(arr, sizeArr);
+	for (int i = 0; i < sizeArr; i++) { table.add(arr[i], sizeArr); }
+
+	showTable(&table, sizeArr);
+
+	table.search(dates[11], sizeArr);
+	cout << "Collisions in the hash table, with the array size of " << sizeArr << ": " << collisions << endl;
+
+	delete[] arr;
+	return 0;
 }
+/*
+Test:
 
-string generateCount() 
-{
-    return correctStr(rand(), 5) + correctStr(rand(), 5) + correctStr(rand(), 5) + correctStr(rand(), 5);
-}
+Input array size: 3
+Name: Smirnova Angela Makarov
+Date of birth: 04.09.1955
+Passport: 561217
 
-string generateSum()
-{
-    return to_string(rand()) + to_string(rand());
-}
+Name: Rodionovna Mario Thomasov
+Date of birth: 30.09.2014
+Passport: 714542
 
-int main() 
-{
-    srand(time(NULL));
-    HashTable myTable;
+Name: Tretyakov Eva Andreevich
+Date of birth: 27.08.2022
+Passport: 282114
 
-    for (int i = 0; i < M; i++) 
-    {
-        string count = generateCount();
-        string newHuman = generateFullName() + " | " + count + " | " + generateSum();
-        add(myTable, count, newHuman);
-    }
-
-    cout << "\nHash table created:\n" << endl;
-    print(myTable);
-    cout << endl;
-
-    int existingInd = rand() % M;
-    while (myTable.table[existingInd] == nullptr) 
-    {
-        existingInd = rand() % M;
-    }
-
-    Node* randomHuman = myTable.table[existingInd];
-    string keyToRemove = randomHuman->key;
-
-    cout << "Delete by key " << keyToRemove << ": ";
-
-    if (removeByKey(myTable, keyToRemove))
-    {
-        cout << "\nElement with key '" << keyToRemove << "' successfully deleted\n" << endl;
-    }
-    else 
-    {
-        cout << "\nElement with key '" << keyToRemove << "'" << " not found\n" << endl;
-    }
-
-    print(myTable);
-    existingInd = rand() % M;
-    while (myTable.table[existingInd] == nullptr) 
-    {
-        existingInd = rand() % M;
-    }
-
-    randomHuman = myTable.table[existingInd];
-    string valueToRemove = randomHuman->value;
-    cout << "\nDelete by value \"" << valueToRemove << "\":" << endl;
-    if (removeByValue(myTable, valueToRemove)) 
-    {
-        cout << "Element with value \"" << valueToRemove << "\" successfully deleted\n" << endl;
-    }
-    else
-    {
-        cout << "Element with value \"" << valueToRemove << "\" not found\n" << endl;
-    }
-    print(myTable);
-
-    existingInd = rand() % M;
-    while (myTable.table[existingInd] == nullptr) 
-    {
-        existingInd = rand() % M;
-    }
-
-    randomHuman = myTable.table[existingInd];
-    string keyToGet = randomHuman->key;
-    cout << "\nGetting an element by key \"" << keyToGet << "\":" << endl;
-    Node* node = get(myTable, keyToGet);
-    if (node != nullptr) 
-    {
-        cout << "Item found: " << node->value << endl;
-    }
-    else 
-    {
-        cout << "Element with value " << keyToGet << "not found." << endl;
-    }
-    cout << "Number of collisions: " << collisionCounter << endl << endl;
-    return 0;
-}
+Person with date of birth 29.04.1999 not found.
+Collisions in the hash table, with the array size of 3: 5
+*/
